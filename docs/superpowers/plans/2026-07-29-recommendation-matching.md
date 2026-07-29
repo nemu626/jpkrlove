@@ -20,7 +20,7 @@
 
 ---
 
-### 작업 1: 추천·결정·매칭 도메인 계약
+### Task 1: 추천·결정·매칭 도메인 계약
 
 **파일:**
 - Create: `packages/domain/src/recommendation.ts`
@@ -104,7 +104,7 @@ git add packages/domain
 git commit -m "feat: define recommendation domain rules"
 ```
 
-### 작업 2: 추천·결정·매칭 데이터 모델과 정책
+### Task 2: 추천·결정·매칭 데이터 모델과 정책
 
 **파일:**
 - Create: `supabase/migrations/202607290002_recommendation_matching.sql`
@@ -176,7 +176,7 @@ git add supabase
 git commit -m "feat: add recommendation and match schema"
 ```
 
-### 작업 3: 일일 추천 생성기
+### Task 3: 일일 추천 생성기
 
 **파일:**
 - Create: `supabase/functions/_shared/recommendation-engine.ts`
@@ -234,7 +234,7 @@ git add supabase/functions supabase/config.toml
 git commit -m "feat: generate daily recommendations"
 ```
 
-### 작업 4: 결정 제출과 원자적 매칭
+### Task 4: 결정 제출과 원자적 매칭
 
 **파일:**
 - Modify: `supabase/migrations/202607290002_recommendation_matching.sql`
@@ -287,7 +287,7 @@ git add supabase
 git commit -m "feat: add atomic match decisions"
 ```
 
-### 작업 5: 모바일 오늘의 소개와 매칭 화면
+### Task 5: 모바일 오늘의 소개와 매칭 화면
 
 **파일:**
 - Create: `packages/api-client/src/recommendation-repository.ts`
@@ -342,7 +342,7 @@ git add apps/mobile packages/api-client
 git commit -m "feat: add daily recommendation experience"
 ```
 
-### 작업 6: 운영 추천과 단계 전체 검증
+### Task 6: 운영 추천과 단계 전체 검증
 
 **파일:**
 - Create: `apps/admin/src/app/recommendations/page.tsx`

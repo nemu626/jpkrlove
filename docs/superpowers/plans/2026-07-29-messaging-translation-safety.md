@@ -21,7 +21,7 @@
 
 ---
 
-### 작업 1: 메시지·번역·안전 도메인 계약
+### Task 1: 메시지·번역·안전 도메인 계약
 
 **파일:**
 - Create: `packages/domain/src/messaging.ts`
@@ -89,7 +89,7 @@ git add packages/domain
 git commit -m "feat: define messaging and safety contracts"
 ```
 
-### 작업 2: 메시지·번역·신고 데이터 모델과 RLS
+### Task 2: 메시지·번역·신고 데이터 모델과 RLS
 
 **파일:**
 - Create: `supabase/migrations/202607290003_messaging_translation_safety.sql`
@@ -152,7 +152,7 @@ git add supabase
 git commit -m "feat: add messaging and safety policies"
 ```
 
-### 작업 3: 멱등 메시지 송신과 일반 푸시
+### Task 3: 멱등 메시지 송신과 일반 푸시
 
 **파일:**
 - Create: `supabase/functions/send-message/index.ts`
@@ -215,7 +215,7 @@ git add supabase/functions
 git commit -m "feat: add safe message delivery"
 ```
 
-### 작업 4: 명시적 요청형 번역
+### Task 4: 명시적 요청형 번역
 
 **파일:**
 - Create: `supabase/functions/_shared/translation-provider.ts`
@@ -276,7 +276,7 @@ git add supabase/functions
 git commit -m "feat: add on-demand translation"
 ```
 
-### 작업 5: 차단·신고·매칭 해제·운영 증거 접근
+### Task 5: 차단·신고·매칭 해제·운영 증거 접근
 
 **파일:**
 - Create: `supabase/functions/block-member/index.ts`
@@ -337,7 +337,7 @@ git add supabase apps/admin
 git commit -m "feat: add blocking and moderation workflows"
 ```
 
-### 작업 6: 모바일 대화·번역·신고 흐름과 전체 검증
+### Task 6: 모바일 대화·번역·신고 흐름과 전체 검증
 
 **파일:**
 - Create: `packages/api-client/src/messaging-repository.ts`

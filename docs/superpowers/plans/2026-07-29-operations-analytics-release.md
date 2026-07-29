@@ -20,7 +20,7 @@
 
 ---
 
-### 작업 1: 멤버십과 계정 상태 계약
+### Task 1: 멤버십과 계정 상태 계약
 
 **파일:**
 - Create: `packages/domain/src/membership.ts`
@@ -80,7 +80,7 @@ git add packages/domain
 git commit -m "feat: define membership and account controls"
 ```
 
-### 작업 2: 권한 원장과 계정 제어 워크플로
+### Task 2: 권한 원장과 계정 제어 워크플로
 
 **파일:**
 - Create: `supabase/migrations/202607290004_membership_account_control.sql`
@@ -148,7 +148,7 @@ git add supabase
 git commit -m "feat: add membership and account control"
 ```
 
-### 작업 3: 개인정보 최소 분석과 E1 읽기 모델
+### Task 3: 개인정보 최소 분석과 E1 읽기 모델
 
 **파일:**
 - Create: `packages/domain/src/analytics.ts`
@@ -223,7 +223,7 @@ git add packages/domain supabase
 git commit -m "feat: add privacy-safe beta analytics"
 ```
 
-### 작업 4: 운영 대시보드와 역할 감사
+### Task 4: 운영 대시보드와 역할 감사
 
 **파일:**
 - Create: `apps/admin/src/app/dashboard/page.tsx`
@@ -278,7 +278,7 @@ git add apps/admin
 git commit -m "feat: add beta operations dashboard"
 ```
 
-### 작업 5: 모바일 계정 제어·권한 게이트·가격 조사
+### Task 5: 모바일 계정 제어·권한 게이트·가격 조사
 
 **파일:**
 - Create: `packages/api-client/src/membership-repository.ts`
@@ -333,7 +333,7 @@ git add apps/mobile packages/api-client
 git commit -m "feat: add membership and privacy controls"
 ```
 
-### 작업 6: 관측성, CI/CD, E2E, 문서 정합성
+### Task 6: 관측성, CI/CD, E2E, 문서 정합성
 
 **파일:**
 - Create: `packages/config/src/redact-pii.ts`

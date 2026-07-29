@@ -25,7 +25,7 @@
 
 ---
 
-### 작업 1: 워크스페이스와 검증 명령
+### Task 1: 워크스페이스와 검증 명령
 
 **파일:**
 - Create: `.nvmrc`
@@ -155,7 +155,7 @@ git add .nvmrc README.md package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.j
 git commit -m "build: scaffold jpkrlove workspace"
 ```
 
-### 작업 2: 초대·신원·프로필 도메인 계약
+### Task 2: 초대·신원·프로필 도메인 계약
 
 **파일:**
 - Create: `packages/domain/src/errors.ts`
@@ -257,7 +257,7 @@ git add packages/domain
 git commit -m "feat: define onboarding domain contracts"
 ```
 
-### 작업 3: 데이터베이스 스키마와 RLS
+### Task 3: 데이터베이스 스키마와 RLS
 
 **파일:**
 - Create: `supabase/migrations/202607290001_foundation_identity_profile.sql`
@@ -411,7 +411,7 @@ git add supabase
 git commit -m "feat: add onboarding database policies"
 ```
 
-### 작업 4: 초대 사용과 본인 확인 공급자 경계
+### Task 4: 초대 사용과 본인 확인 공급자 경계
 
 **파일:**
 - Create: `supabase/functions/_shared/http.ts`
@@ -493,7 +493,7 @@ git add supabase/functions
 git commit -m "feat: add invitation and identity workflows"
 ```
 
-### 작업 5: 모바일 온보딩과 프로필 제출
+### Task 5: 모바일 온보딩과 프로필 제출
 
 **파일:**
 - Create: `packages/api-client/src/auth-repository.ts`
@@ -562,7 +562,7 @@ git add apps/mobile packages/api-client
 git commit -m "feat: add mobile onboarding flow"
 ```
 
-### 작업 6: 운영 프로필 심사와 수직 통합 테스트
+### Task 6: 운영 프로필 심사와 수직 통합 테스트
 
 **파일:**
 - Create: `apps/admin/src/lib/supabase/server.ts`
