@@ -1,1 +1,16 @@
 .worktrees/
+node_modules/
+.pnpm-store/
+.turbo/
+dist/
+coverage/
+.expo/
+.next/
+out/
+.env
+.env.*
+!.env.example
+supabase/.temp/
+supabase/.branches/
+*.log
+.DS_Store

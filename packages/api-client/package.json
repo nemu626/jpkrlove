@@ -1,0 +1,16 @@
+{
+  "name": "@jpkrlove/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "prettier --check .",
+    "typecheck": "tsc --noEmit --project tsconfig.json",
+    "test": "vitest run --passWithNoTests",
+    "build": "tsc --noEmit --project tsconfig.json"
+  },
+  "dependencies": {
+    "@jpkrlove/domain": "workspace:*",
+    "@supabase/supabase-js": "2.111.0"
+  }
+}

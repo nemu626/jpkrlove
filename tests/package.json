@@ -1,0 +1,16 @@
+{
+  "name": "@jpkrlove/integration-tests",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "prettier --check .",
+    "typecheck": "tsc --noEmit --project tsconfig.json",
+    "test": "vitest run --passWithNoTests",
+    "build": "tsc --noEmit --project tsconfig.json"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "2.111.0",
+    "vitest": "4.1.10"
+  }
+}
