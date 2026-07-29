@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DomainError, DomainErrorCode } from './errors.js';
 import { IdentityStatusSchema, VerifiedIdentitySchema } from './identity.js';
 import { InvitationCodeSchema } from './invitation.js';
-import { deriveMemberState } from './member-state.js';
+import { deriveMemberState, type MemberStateInput } from './member-state.js';
 import {
   ProfileDraftSchema,
   PublicProfileSchema,
@@ -130,6 +130,13 @@ describe('onboarding domain contracts', () => {
     const publicProfile = toPublicProfile({
       profile: ProfileDraftSchema.parse(validProfile),
       identity: VerifiedIdentitySchema.parse(verifiedIdentity),
+      eligibility: {
+        invitation: 'accepted',
+        identity: 'verified',
+        profileReview: 'approved',
+        paused: false,
+        restriction: 'none',
+      },
       asOf: new Date('2026-07-29T00:00:00.000Z'),
     });
 
@@ -140,6 +147,103 @@ describe('onboarding domain contracts', () => {
     expect(PublicProfileSchema.safeParse(publicProfile).success).toBe(true);
   });
 
+  it.each([
+    {
+      name: 'a draft profile',
+      eligibility: {
+        invitation: 'accepted',
+        identity: 'verified',
+        profileReview: 'draft',
+        paused: false,
+        restriction: 'none',
+      },
+    },
+    {
+      name: 'a submitted profile',
+      eligibility: {
+        invitation: 'accepted',
+        identity: 'verified',
+        profileReview: 'submitted',
+        paused: false,
+        restriction: 'none',
+      },
+    },
+    {
+      name: 'a profile with changes requested',
+      eligibility: {
+        invitation: 'accepted',
+        identity: 'verified',
+        profileReview: 'changes_requested',
+        paused: false,
+        restriction: 'none',
+      },
+    },
+    {
+      name: 'a rejected profile',
+      eligibility: {
+        invitation: 'accepted',
+        identity: 'verified',
+        profileReview: 'rejected',
+        paused: false,
+        restriction: 'none',
+      },
+    },
+    {
+      name: 'a paused profile',
+      eligibility: {
+        invitation: 'accepted',
+        identity: 'verified',
+        profileReview: 'approved',
+        paused: true,
+        restriction: 'none',
+      },
+    },
+    {
+      name: 'a temporarily hidden profile',
+      eligibility: {
+        invitation: 'accepted',
+        identity: 'verified',
+        profileReview: 'approved',
+        paused: false,
+        restriction: 'temporary_hidden',
+      },
+    },
+    {
+      name: 'a suspended profile',
+      eligibility: {
+        invitation: 'accepted',
+        identity: 'verified',
+        profileReview: 'approved',
+        paused: false,
+        restriction: 'suspended',
+      },
+    },
+    {
+      name: 'a banned profile',
+      eligibility: {
+        invitation: 'accepted',
+        identity: 'verified',
+        profileReview: 'approved',
+        paused: false,
+        restriction: 'banned',
+      },
+    },
+  ] satisfies ReadonlyArray<{ name: string; eligibility: MemberStateInput }>)(
+    'rejects $name from public mapping',
+    ({ eligibility }) => {
+      expect(() =>
+        toPublicProfile({
+          profile: ProfileDraftSchema.parse(validProfile),
+          identity: VerifiedIdentitySchema.parse(verifiedIdentity),
+          eligibility,
+          asOf: new Date('2026-07-29T00:00:00.000Z'),
+        }),
+      ).toThrow(
+        expect.objectContaining({ code: DomainErrorCode.PROFILE_NOT_ACTIVE }),
+      );
+    },
+  );
+
   it('rejects public mapping for a minor', () => {
     expect(() =>
       toPublicProfile({
@@ -148,6 +252,13 @@ describe('onboarding domain contracts', () => {
           ...verifiedIdentity,
           birthDate: '2008-07-30',
         }),
+        eligibility: {
+          invitation: 'accepted',
+          identity: 'verified',
+          profileReview: 'approved',
+          paused: false,
+          restriction: 'none',
+        },
         asOf: new Date('2026-07-29T00:00:00.000Z'),
       }),
     ).toThrow(
@@ -163,6 +274,13 @@ describe('onboarding domain contracts', () => {
           ...verifiedIdentity,
           status: 'pending',
         }),
+        eligibility: {
+          invitation: 'accepted',
+          identity: 'verified',
+          profileReview: 'approved',
+          paused: false,
+          restriction: 'none',
+        },
         asOf: new Date('2026-07-29T00:00:00.000Z'),
       }),
     ).toThrow(

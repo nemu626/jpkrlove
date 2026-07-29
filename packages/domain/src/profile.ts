@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { DomainError, DomainErrorCode } from './errors.js';
 import type { VerifiedIdentity } from './identity.js';
+import { deriveMemberState, type MemberStateInput } from './member-state.js';
 
 const LocaleSchema = z.enum(['ja', 'ko']);
 const NationalitySchema = z.enum(['JP', 'KR']);
@@ -72,8 +73,13 @@ export type PublicProfile = z.infer<typeof PublicProfileSchema>;
 export function toPublicProfile(input: {
   profile: ProfileDraft;
   identity: VerifiedIdentity;
+  eligibility: MemberStateInput;
   asOf: Date;
 }): PublicProfile {
+  if (deriveMemberState(input.eligibility) !== 'active') {
+    throw new DomainError(DomainErrorCode.PROFILE_NOT_ACTIVE);
+  }
+
   if (input.identity.status !== 'verified') {
     throw new DomainError(DomainErrorCode.IDENTITY_NOT_VERIFIED);
   }
