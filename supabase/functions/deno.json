@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.ns", "dom", "esnext"],
+    "strict": true
+  },
+  "fmt": {
+    "lineWidth": 80,
+    "singleQuote": true
+  },
+  "tasks": {
+    "check": "deno check _shared/*.ts redeem-invitation/index.ts create-identity-session/index.ts identity-webhook/index.ts tests/*.test.ts",
+    "fmt": "deno fmt --check",
+    "test": "deno test --allow-env tests"
+  }
+}

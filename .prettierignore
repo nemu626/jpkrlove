@@ -7,6 +7,7 @@ dist/
 out/
 .expo/
 supabase/.temp/
+supabase/functions/
 pnpm-lock.yaml
 **/expo-env.d.ts
 **/next-env.d.ts

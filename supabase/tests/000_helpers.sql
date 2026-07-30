@@ -60,6 +60,7 @@ revoke all on function tests.get_supabase_uid(text) from public;
 revoke all on function tests.create_supabase_user(text) from public;
 revoke all on function tests.authenticate_as(text) from public;
 
-grant usage on schema tests to authenticated;
-grant execute on function tests.get_supabase_uid(text) to authenticated;
+grant usage on schema tests to authenticated, service_role;
+grant execute on function tests.get_supabase_uid(text)
+to authenticated, service_role;
 grant execute on function tests.authenticate_as(text) to authenticated;
