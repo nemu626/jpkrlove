@@ -38,19 +38,45 @@ create table app.members (
 
 create table app.profiles (
   user_id uuid primary key references app.members (user_id) on delete cascade,
-  display_name text not null check (char_length(display_name) between 1 and 80),
-  nationality text not null check (nationality in ('JP', 'KR')),
-  region_code text not null,
-  introduction text not null check (
-    char_length(introduction) between 40 and 1000
+  display_name text not null check (
+    display_name = btrim(display_name)
+    and char_length(display_name) between 1 and 100
   ),
-  marriage_timing text not null,
+  nationality text not null check (nationality in ('JP', 'KR')),
+  region_code text not null check (
+    region_code = btrim(region_code)
+    and char_length(region_code) between 1 and 32
+  ),
+  introduction text not null check (
+    introduction = btrim(introduction)
+    and char_length(introduction) between 40 and 1000
+  ),
+  marriage_timing text not null check (
+    marriage_timing in (
+      'within_1_year',
+      'within_2_years',
+      'within_3_years',
+      'not_sure'
+    )
+  ),
   residence_country text not null check (residence_country in ('JP', 'KR')),
   willing_to_relocate boolean not null,
-  children_preference text not null,
-  smoking_status text not null,
-  ja_level text not null,
-  ko_level text not null,
+  children_preference text not null check (
+    children_preference in (
+      'want_children',
+      'do_not_want_children',
+      'open_to_discuss'
+    )
+  ),
+  smoking_status text not null check (
+    smoking_status in ('non_smoker', 'smoker', 'trying_to_quit')
+  ),
+  ja_level text not null check (
+    ja_level in ('basic', 'intermediate', 'advanced', 'native')
+  ),
+  ko_level text not null check (
+    ko_level in ('basic', 'intermediate', 'advanced', 'native')
+  ),
   willing_to_learn_partner_language boolean not null,
   occupation_category text,
   review_status text not null default 'draft' check (
@@ -174,21 +200,6 @@ as $$
   )
 $$;
 
-create or replace function app.is_active_member_path(candidate_user_id text)
-returns boolean
-language sql
-stable
-security definer
-set search_path = pg_catalog, app
-as $$
-  select exists (
-    select 1
-    from app.members
-    where user_id::text = candidate_user_id
-      and member_state = 'active'
-  )
-$$;
-
 create or replace function app.has_active_access(candidate_user_id uuid)
 returns boolean
 language sql
@@ -211,24 +222,51 @@ set search_path = pg_catalog, app, private
 as $$
 declare
   caller_user_id uuid := auth.uid();
+  requested_code_hash bytea;
+  redeemed_code_hash bytea;
   invitation private.invitation_codes%rowtype;
 begin
   if caller_user_id is null then
     raise exception 'authentication required';
   end if;
 
+  requested_code_hash := extensions.digest(
+    convert_to(upper(btrim(code)), 'UTF8'),
+    'sha256'
+  );
+
+  perform 1
+  from auth.users
+  where id = caller_user_id
+  for update;
+
+  select invitation_codes.code_hash
+  into redeemed_code_hash
+  from private.invitation_redemptions
+  join private.invitation_codes as invitation_codes
+    on invitation_codes.id = invitation_redemptions.invitation_code_id
+  where invitation_redemptions.user_id = caller_user_id;
+
+  if found then
+    if redeemed_code_hash = requested_code_hash then
+      return true;
+    end if;
+
+    raise exception using
+      errcode = 'P0001',
+      message = 'invitation already redeemed with another code';
+  end if;
+
   select *
   into invitation
   from private.invitation_codes
-  where code_hash = extensions.digest(
-    convert_to(upper(btrim(code)), 'UTF8'),
-    'sha256'
-  )
-    and expires_at > now()
-    and used_count < capacity
+  where code_hash = requested_code_hash
   for update;
 
-  if not found then
+  if not found
+    or invitation.expires_at <= now()
+    or invitation.used_count >= invitation.capacity
+  then
     raise exception 'invitation is invalid, expired, or at capacity';
   end if;
 
@@ -259,7 +297,8 @@ begin
   )
   on conflict (user_id) do update
   set member_state = 'identity_pending',
-      updated_at = now();
+      updated_at = now()
+  where members.member_state = 'waiting';
 
   return true;
 end
@@ -309,16 +348,24 @@ grant update (
   occupation_category,
   updated_at
 ) on app.profiles to authenticated;
-grant insert, update, delete on app.profile_media to authenticated;
+grant insert (
+  user_id,
+  object_path,
+  position
+) on app.profile_media to authenticated;
+grant update (
+  user_id,
+  object_path,
+  position
+) on app.profile_media to authenticated;
+grant delete on app.profile_media to authenticated;
 grant insert, update, delete on app.profile_preferences to authenticated;
 grant all on all tables in schema app to service_role;
 
 revoke all on function app.is_active_member(uuid) from public;
-revoke all on function app.is_active_member_path(text) from public;
 revoke all on function app.has_active_access(uuid) from public;
 revoke all on function app.redeem_invitation(text) from public;
 grant execute on function app.is_active_member(uuid) to authenticated, service_role;
-grant execute on function app.is_active_member_path(text) to authenticated, service_role;
 grant execute on function app.has_active_access(uuid) to authenticated, service_role;
 grant execute on function app.redeem_invitation(text) to authenticated, service_role;
 
@@ -424,13 +471,7 @@ for select
 to authenticated
 using (
   bucket_id = 'profile-media'
-  and (
-    split_part(name, '/', 1) = auth.uid()::text
-    or (
-      app.is_active_member(auth.uid())
-      and app.is_active_member_path(split_part(name, '/', 1))
-    )
-  )
+  and split_part(name, '/', 1) = auth.uid()::text
 );
 
 create policy profile_media_member_insert

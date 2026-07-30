@@ -419,18 +419,13 @@ select throws_ok(
 );
 select results_eq(
   $$
-    select name
+    select count(*)::integer
     from storage.objects
     where bucket_id = 'profile-media'
       and name like tests.get_supabase_uid('member_a')::text || '/%'
   $$,
-  $$
-    select name
-    from storage.objects
-    where bucket_id = 'profile-media'
-      and name like tests.get_supabase_uid('member_a')::text || '/%'
-  $$,
-  'member can read own private profile media'
+  array[1],
+  'member can read exactly their own private profile media object'
 );
 select is_empty(
   $$
@@ -441,14 +436,14 @@ select is_empty(
   $$,
   'draft profile media is not readable by another member'
 );
-select isnt_empty(
+select is_empty(
   $$
     select *
     from storage.objects
     where bucket_id = 'profile-media'
       and name like tests.get_supabase_uid('member_c')::text || '/%'
   $$,
-  'active members can read another active member profile media'
+  'cross-member profile media requires a short signed URL'
 );
 select throws_ok(
   format(
