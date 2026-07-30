@@ -1,6 +1,6 @@
 begin;
 
-select plan(34);
+select plan(40);
 
 do $$
 begin
@@ -10,6 +10,7 @@ begin
   perform tests.create_supabase_user('identity_underage');
   perform tests.create_supabase_user('identity_mismatch');
   perform tests.create_supabase_user('identity_provider_failed');
+  perform tests.create_supabase_user('identity_deleted_redemption');
 end
 $$;
 
@@ -63,6 +64,10 @@ values
   (
     '10000000-0000-4000-8000-000000000002',
     tests.get_supabase_uid('identity_provider_failed')
+  ),
+  (
+    '10000000-0000-4000-8000-000000000001',
+    tests.get_supabase_uid('identity_deleted_redemption')
   );
 
 insert into app.members (
@@ -74,6 +79,12 @@ insert into app.members (
 values
   (
     tests.get_supabase_uid('identity_adult_jp'),
+    'ja',
+    'woman',
+    'identity_pending'
+  ),
+  (
+    tests.get_supabase_uid('identity_deleted_redemption'),
     'ja',
     'woman',
     'identity_pending'
@@ -410,6 +421,83 @@ select results_eq(
   $$ values (true, 'failed'::text, 'NATIONALITY_MISMATCH'::text) $$,
   'nationality outside the invitation cohort fails verification'
 );
+
+select results_eq(
+  format(
+    'select provider_case_id, status from app.internal_create_identity_case(%L, %L)',
+    tests.get_supabase_uid('identity_deleted_redemption'),
+    'case-deleted-redemption'
+  ),
+  $$ values ('case-deleted-redemption'::text, 'pending'::text) $$,
+  'identity case snapshots an accepted invitation before later retention'
+);
+
+reset role;
+
+delete from private.invitation_redemptions
+where user_id = tests.get_supabase_uid('identity_deleted_redemption');
+
+set local role service_role;
+
+select results_eq(
+  $$
+    select applied, status, failure_reason
+    from app.internal_apply_identity_result(
+      'case-deleted-redemption',
+      'verified',
+      date '1990-01-01',
+      'KR',
+      timestamptz '2026-07-30 00:00:00+00'
+    )
+  $$,
+  $$ values (true, 'failed'::text, 'NATIONALITY_MISMATCH'::text) $$,
+  'deleted redemption cannot erase the snapshotted nationality rule'
+);
+
+reset role;
+
+select is(
+  (
+    select invitation_cohort
+    from private.identity_cases
+    where provider_case_id = 'case-deleted-redemption'
+  ),
+  'jp_women',
+  'identity case retains its immutable invitation cohort snapshot'
+);
+select results_eq(
+  $$
+    select status, failure_reason, verified_nationality
+    from private.identity_cases
+    where provider_case_id = 'case-deleted-redemption'
+  $$,
+  $$ values ('failed'::text, 'NATIONALITY_MISMATCH'::text, 'KR'::text) $$,
+  'deleted-redemption result remains a failed mismatch case'
+);
+select is(
+  (
+    select member_state::text
+    from app.members
+    where user_id = tests.get_supabase_uid('identity_deleted_redemption')
+  ),
+  'identity_failed',
+  'deleted-redemption mismatch fails the member'
+);
+
+select tests.authenticate_as('identity_deleted_redemption');
+select throws_ok(
+  $$
+    update private.identity_cases
+    set invitation_cohort = 'kr_men'
+    where provider_case_id = 'case-deleted-redemption'
+  $$,
+  '42501',
+  null,
+  'member cannot mutate the private invitation cohort snapshot'
+);
+reset role;
+
+set local role service_role;
 
 select results_eq(
   format(

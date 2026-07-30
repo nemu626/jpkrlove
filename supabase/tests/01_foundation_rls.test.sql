@@ -131,7 +131,8 @@ insert into private.identity_cases (
   document_status,
   face_match_status,
   liveness_status,
-  status
+  status,
+  invitation_cohort
 )
 values (
   tests.get_supabase_uid('member_b'),
@@ -139,7 +140,8 @@ values (
   'pending',
   'pending',
   'pending',
-  'pending'
+  'pending',
+  'kr_men'
 );
 
 insert into storage.objects (id, bucket_id, name, owner_id)
@@ -289,11 +291,14 @@ select is(
           'liveness_status',
           'status',
           'verified_at',
-          'retention_until'
+          'retention_until',
+          'failure_reason',
+          'result_observed_at',
+          'invitation_cohort'
         ]
       )
   ),
-  9,
+  12,
   'identity case stores only derived verification fields'
 );
 

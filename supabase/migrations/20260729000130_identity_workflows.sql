@@ -1,6 +1,9 @@
+begin;
+
 alter table private.identity_cases
 add column failure_reason text,
 add column result_observed_at timestamptz,
+add column invitation_cohort text,
 add constraint identity_cases_provider_case_id_check check (
   provider_case_id = btrim(provider_case_id)
   and char_length(provider_case_id) between 1 and 255
@@ -24,6 +27,9 @@ add constraint identity_cases_failure_reason_check check (
     'UNDERAGE',
     'NATIONALITY_MISMATCH'
   )
+),
+add constraint identity_cases_invitation_cohort_check check (
+  invitation_cohort in ('jp_women', 'kr_men')
 ),
 add constraint identity_cases_result_shape_check check (
   (
@@ -49,12 +55,38 @@ add constraint identity_cases_result_shape_check check (
   or status = 'expired'
 );
 
+update private.identity_cases as identity_cases
+set invitation_cohort = invitation_codes.cohort
+from private.invitation_redemptions as redemptions
+join private.invitation_codes as invitation_codes
+  on invitation_codes.id = redemptions.invitation_code_id
+where redemptions.user_id = identity_cases.user_id;
+
+do $$
+begin
+  if exists (
+    select 1
+    from private.identity_cases
+    where invitation_cohort is null
+  ) then
+    raise exception using
+      errcode = '23502',
+      message = 'cannot backfill identity case invitation cohort';
+  end if;
+end
+$$;
+
+alter table private.identity_cases
+alter column invitation_cohort set not null;
+
 comment on column private.identity_cases.verified_birth_date is
   'Private derived identity attribute; never expose through the Data API.';
 comment on column private.identity_cases.verified_nationality is
   'Private derived identity attribute; never expose through the Data API.';
 comment on column private.identity_cases.provider_case_id is
   'Opaque provider reference only; legal names and identity documents are not stored.';
+comment on column private.identity_cases.invitation_cohort is
+  'Immutable private snapshot used for identity nationality eligibility.';
 
 create or replace function app.internal_create_identity_case(
   target_user_id uuid,
@@ -70,6 +102,7 @@ set search_path = pg_catalog, app, private, audit
 as $$
 declare
   existing_case private.identity_cases%rowtype;
+  accepted_invitation_cohort text;
 begin
   if target_user_id is null
     or new_provider_case_id is null
@@ -92,11 +125,15 @@ begin
       message = 'identity user not found';
   end if;
 
-  if not exists (
-    select 1
-    from private.invitation_redemptions
-    where user_id = target_user_id
-  ) then
+  select invitation_codes.cohort
+  into accepted_invitation_cohort
+  from private.invitation_redemptions as redemptions
+  join private.invitation_codes as invitation_codes
+    on invitation_codes.id = redemptions.invitation_code_id
+  where redemptions.user_id = target_user_id
+  for share of redemptions, invitation_codes;
+
+  if not found then
     raise exception using
       errcode = 'P0001',
       message = 'accepted invitation required';
@@ -120,7 +157,8 @@ begin
     document_status,
     face_match_status,
     liveness_status,
-    status
+    status,
+    invitation_cohort
   )
   values (
     target_user_id,
@@ -128,7 +166,8 @@ begin
     'pending',
     'pending',
     'pending',
-    'pending'
+    'pending',
+    accepted_invitation_cohort
   )
   returning
     identity_cases.provider_case_id,
@@ -163,7 +202,6 @@ set search_path = pg_catalog, app, private, audit
 as $$
 declare
   identity_case private.identity_cases%rowtype;
-  invitation_cohort text;
   final_status text;
   final_failure_reason text;
   observation_date date;
@@ -205,13 +243,6 @@ begin
       message = 'identity case not found';
   end if;
 
-  select invitation_codes.cohort
-  into invitation_cohort
-  from private.invitation_redemptions as redemptions
-  join private.invitation_codes as invitation_codes
-    on invitation_codes.id = redemptions.invitation_code_id
-  where redemptions.user_id = identity_case.user_id;
-
   if identity_case.status <> 'pending' then
     return query
     select
@@ -230,10 +261,10 @@ begin
     final_status := 'failed';
     final_failure_reason := 'UNDERAGE';
   elsif (
-    invitation_cohort = 'jp_women'
+    identity_case.invitation_cohort = 'jp_women'
     and provider_nationality <> 'JP'
   ) or (
-    invitation_cohort = 'kr_men'
+    identity_case.invitation_cohort = 'kr_men'
     and provider_nationality <> 'KR'
   ) then
     final_status := 'failed';
@@ -320,3 +351,5 @@ grant execute on function app.internal_apply_identity_result(
   timestamptz
 )
 to service_role;
+
+commit;
