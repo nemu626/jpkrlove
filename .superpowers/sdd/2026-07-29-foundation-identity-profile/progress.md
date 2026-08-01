@@ -19,3 +19,5 @@ Task 5: fix round 1/5 (4 addressed, 0 open — media array validation; deep-link
 Task 5: complete (commits 73f78ca..2ccd6b1, review clean; 1 deferred non-blocking app foreground revalidation risk)
 Task 6: review CHANGES_REQUIRED (3 Important — reviewer Storage signing, stale submitted case mutation, CI DB contract gap; review 2bd433e)
 Task 6: fix round 1/5 (3 addressed, 0 open — server-only short-TTL signer, latest-case lock/guard, Supabase DB contract CI; commit 934edf5)
+Task 6: re-review CHANGES_REQUIRED (1 Important — service-role signer trusted arbitrary media path due missing path/owner boundary; 1 Minor — timestamp tie-break; review 934edf5)
+Task 6: fix round 2/5 (2 addressed, 0 open — media path prefix/storage owner RLS and latest-case tie-break; commit cb1bb8f)
