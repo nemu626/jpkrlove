@@ -101,11 +101,13 @@ begin
     and profiles.review_status = 'submitted'
     and members.member_state = 'profile_in_review'
     and identity_cases.status = 'verified'
-    and reviews.created_at = (
-      select max(latest.created_at)
+    and reviews.id = (
+      select latest.id
       from private.profile_reviews as latest
       where latest.user_id = reviews.user_id
         and latest.status = 'submitted'
+      order by latest.created_at desc, latest.id desc
+      limit 1
     )
   group by
     reviews.id,
@@ -115,7 +117,7 @@ begin
     profiles.introduction,
     identity_cases.status,
     reviews.created_at
-  order by reviews.created_at asc;
+  order by reviews.created_at asc, reviews.id asc;
 end
 $$;
 
@@ -333,3 +335,41 @@ grant execute on function app.admin_current_operator() to authenticated;
 grant execute on function app.admin_profile_review_cases() to authenticated;
 grant execute on function app.admin_profile_review_case(uuid) to authenticated;
 grant execute on function app.admin_review_profile(uuid, text, text) to authenticated;
+
+-- Profile media metadata must point to an object owned by the same member.
+-- The mobile RPCs enforce the same invariant, but direct authenticated table
+-- writes remain part of the Data API contract and need an equivalent boundary.
+drop policy if exists profile_media_insert_own on app.profile_media;
+create policy profile_media_insert_own
+on app.profile_media
+for insert
+to authenticated
+with check (
+  user_id = auth.uid()
+  and object_path ~ ('^' || auth.uid()::text || '/[^/]+$')
+  and exists (
+    select 1
+    from storage.objects
+    where bucket_id = 'profile-media'
+      and name = object_path
+      and owner_id = auth.uid()::text
+  )
+);
+
+drop policy if exists profile_media_update_own on app.profile_media;
+create policy profile_media_update_own
+on app.profile_media
+for update
+to authenticated
+using (user_id = auth.uid())
+with check (
+  user_id = auth.uid()
+  and object_path ~ ('^' || auth.uid()::text || '/[^/]+$')
+  and exists (
+    select 1
+    from storage.objects
+    where bucket_id = 'profile-media'
+      and name = object_path
+      and owner_id = auth.uid()::text
+  )
+);

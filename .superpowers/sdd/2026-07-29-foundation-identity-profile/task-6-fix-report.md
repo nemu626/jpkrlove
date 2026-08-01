@@ -7,6 +7,7 @@ Complete pending independent re-review.
 ## Commit
 
 - `934edf5` `fix: close profile review boundaries and add db ci`
+- 次の修正コミット: このレポートを含むコミット
 
 ## 修正内容
 
@@ -14,13 +15,15 @@ Complete pending independent re-review.
 - `admin_review_profile`はuserごとの最新submitted review case（`created_at desc, id desc`）だけを受け付け、差し戻し・再提出後の古いcase IDを拒否する。
 - pgTAPにreviewerの直接Storage拒否、stale case拒否を追加した。
 - CIにSupabase CLIのstart、db reset、pgTAP、db lint jobを追加した。in-memory integration fixtureは画面状態の補助であり、DB契約の代替にしないことをREADMEへ明記した。
+- `app.profile_media`のauthenticated直接INSERT/UPDATEポリシーに、会員IDのパス接頭辞と`storage.objects.owner_id`一致を追加した。これにより別会員のStorageオブジェクトパスをメタデータへ差し替えても、service-role署名器へ到達しない。
+- 審査一覧の最新submittedケース選択を`created_at`のみの比較から`created_at desc, id desc`へ変更し、同一タイムスタンプの重複ケースを排除した。
 
 ## 検証
 
 - Admin unit: 8/8
 - Admin typecheck/lint: PASS
 - Admin build: PASS（Next 16 middleware deprecation warningのみ）
-- pgTAP: foundation 47/47、security 37/37、identity 40/40、mobile 22/22、admin 23/23
+- pgTAP: foundation 47/47、security 39/39、identity 40/40、mobile 22/22、admin 23/23
 - Root verificationはTask6実装時点のformat/lint/typecheck/test/build全PASSを維持（Node 26.5.0でengine warning）。
 
 ## 残存制約

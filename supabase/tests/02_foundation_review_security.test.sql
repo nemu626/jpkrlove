@@ -1,6 +1,6 @@
 begin;
 
-select plan(37);
+select plan(39);
 
 do $$
 begin
@@ -120,6 +120,12 @@ values
     'profile-media',
     tests.get_supabase_uid('storage_owner')::text || '/pending-replacement.jpg',
     tests.get_supabase_uid('storage_owner')::text
+  ),
+  (
+    gen_random_uuid(),
+    'profile-media',
+    tests.get_supabase_uid('storage_viewer')::text || '/private.jpg',
+    tests.get_supabase_uid('storage_viewer')::text
   );
 
 select tests.authenticate_as('storage_viewer');
@@ -184,11 +190,28 @@ select lives_ok(
     )
     values (
       tests.get_supabase_uid('storage_owner'),
-      tests.get_supabase_uid('storage_owner')::text || '/pending.jpg',
+      tests.get_supabase_uid('storage_owner')::text || '/pending-replacement.jpg',
       2
     )
   $$,
   'member can insert profile media with default pending moderation'
+);
+select throws_ok(
+  $$
+    insert into app.profile_media (
+      user_id,
+      object_path,
+      position
+    )
+    values (
+      tests.get_supabase_uid('storage_owner'),
+      tests.get_supabase_uid('storage_viewer')::text || '/private.jpg',
+      3
+    )
+  $$,
+  '42501',
+  null,
+  'member cannot reference another member storage media in a direct insert'
 );
 select throws_ok(
   $$
@@ -209,6 +232,17 @@ select lives_ok(
       and position = 2
   $$,
   'member can update an editable profile media column'
+);
+select throws_ok(
+  $$
+    update app.profile_media
+    set object_path = tests.get_supabase_uid('storage_viewer')::text || '/private.jpg'
+    where user_id = tests.get_supabase_uid('storage_owner')
+      and position = 3
+  $$,
+  '42501',
+  null,
+  'member cannot replace own media row with another member storage media'
 );
 select throws_ok(
   $$
