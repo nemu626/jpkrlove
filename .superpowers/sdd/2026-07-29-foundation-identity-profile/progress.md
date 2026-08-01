@@ -21,3 +21,4 @@ Task 6: review CHANGES_REQUIRED (3 Important — reviewer Storage signing, stale
 Task 6: fix round 1/5 (3 addressed, 0 open — server-only short-TTL signer, latest-case lock/guard, Supabase DB contract CI; commit 934edf5)
 Task 6: re-review CHANGES_REQUIRED (1 Important — service-role signer trusted arbitrary media path due missing path/owner boundary; 1 Minor — timestamp tie-break; review 934edf5)
 Task 6: fix round 2/5 (2 addressed, 0 open — media path prefix/storage owner RLS and latest-case tie-break; commit cb1bb8f)
+Task 6: complete (commits 2bd433e..cb1bb8f; final re-review approved; DB contracts and root verification passed)
