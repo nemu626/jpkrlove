@@ -46,6 +46,7 @@ function ProtectedRoutes() {
       </Stack.Protected>
       <Stack.Protected guard={Boolean(session)}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="identity/callback" />
         <Stack.Screen name="(onboarding)" />
         <Stack.Screen name="(app)" />
       </Stack.Protected>

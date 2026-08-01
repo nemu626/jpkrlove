@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text } from 'react-native';
 import type { AppLocale } from '@/i18n';
 import { translate } from '@/i18n';
+import { IDENTITY_CALLBACK_URL } from '../identity-callback';
 import {
   OnboardingScreen,
   onboardingStyles,
@@ -14,13 +15,14 @@ export function IdentityScreen({
   locale,
   memberState,
   repository,
-  openIdentitySession = (url) => WebBrowser.openBrowserAsync(url),
+  openIdentitySession = (url, callbackUrl) =>
+    WebBrowser.openAuthSessionAsync(url, callbackUrl),
   onSessionClosed,
 }: {
   locale: AppLocale;
   memberState: MemberState;
   repository: OnboardingRepository;
-  openIdentitySession?: (url: string) => Promise<unknown>;
+  openIdentitySession?: (url: string, callbackUrl: string) => Promise<unknown>;
   onSessionClosed?: () => void;
 }) {
   const [isLoading, setIsLoading] = useState(false);
@@ -31,7 +33,7 @@ export function IdentityScreen({
     setError(null);
     try {
       const session = await repository.createIdentitySession();
-      await openIdentitySession(session.redirectUrl);
+      await openIdentitySession(session.redirectUrl, IDENTITY_CALLBACK_URL);
       onSessionClosed?.();
     } catch {
       setError(translate(locale, 'common.unexpectedError'));

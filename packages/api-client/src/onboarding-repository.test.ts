@@ -156,6 +156,55 @@ describe('SupabaseOnboardingRepository', () => {
     ]);
   });
 
+  it('retries storage cleanup after the media row was already deleted', async () => {
+    const removeProfileObjects = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('storage unavailable'))
+      .mockResolvedValueOnce(undefined);
+    const callRpc = vi
+      .fn()
+      .mockResolvedValueOnce('member-1/photo-3')
+      .mockResolvedValueOnce(null);
+    const gateway = createGateway({ callRpc, removeProfileObjects });
+    const repository = new SupabaseOnboardingRepository(gateway, clock);
+    const media = {
+      id: 'photo-3',
+      objectPath: 'member-1/photo-3',
+      position: 3,
+      signedUrl: 'https://signed.test/photo-3',
+      signedUrlExpiresAt: '2026-07-30T00:01:00.000Z',
+      uploadStatus: 'uploaded' as const,
+    };
+
+    await expect(repository.deleteProfileMedia(media)).rejects.toThrow(
+      'storage unavailable',
+    );
+    await expect(repository.deleteProfileMedia(media)).resolves.toBeUndefined();
+
+    expect(callRpc).toHaveBeenCalledTimes(2);
+    expect(removeProfileObjects).toHaveBeenCalledTimes(2);
+    expect(removeProfileObjects).toHaveBeenLastCalledWith(['member-1/photo-3']);
+  });
+
+  it('rejects another member storage path before deleting media', async () => {
+    const gateway = createGateway();
+    const repository = new SupabaseOnboardingRepository(gateway, clock);
+
+    await expect(
+      repository.deleteProfileMedia({
+        id: 'photo-3',
+        objectPath: 'member-2/photo-3',
+        position: 3,
+        signedUrl: 'https://signed.test/photo-3',
+        signedUrlExpiresAt: '2026-07-30T00:01:00.000Z',
+        uploadStatus: 'uploaded',
+      }),
+    ).rejects.toMatchObject({ code: 'MEDIA_OPERATION_FAILED' });
+
+    expect(gateway.callRpc).not.toHaveBeenCalled();
+    expect(gateway.removeProfileObjects).not.toHaveBeenCalled();
+  });
+
   it('saves and submits only a domain-valid profile', async () => {
     const gateway = createGateway();
     const repository = new SupabaseOnboardingRepository(gateway, clock);

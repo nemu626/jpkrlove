@@ -129,10 +129,18 @@ export class SupabaseOnboardingRepository implements OnboardingRepository {
   }
 
   async deleteProfileMedia(media: ProfileMedia): Promise<void> {
+    const userId = await this.gateway.getCurrentUserId();
+    if (!isOwnedProfileMediaPath(media.objectPath, userId)) {
+      throw new RepositoryError('MEDIA_OPERATION_FAILED');
+    }
     if (media.position > 0) {
-      await this.gateway.callRpc('delete_profile_media', {
-        target_media_id: media.id,
-      });
+      const deletedObjectPath = await this.gateway.callRpc<string | null>(
+        'delete_profile_media',
+        { target_media_id: media.id },
+      );
+      if (deletedObjectPath && deletedObjectPath !== media.objectPath) {
+        throw new RepositoryError('MEDIA_OPERATION_FAILED');
+      }
     }
     await this.gateway.removeProfileObjects([media.objectPath]);
   }
@@ -313,6 +321,15 @@ function validMediaId(value: string): string {
     throw new RepositoryError('MEDIA_OPERATION_FAILED');
   }
   return value;
+}
+
+function isOwnedProfileMediaPath(path: string, userId: string): boolean {
+  const prefix = `${userId}/`;
+  return (
+    path.startsWith(prefix) &&
+    path.length > prefix.length &&
+    !path.slice(prefix.length).includes('/')
+  );
 }
 
 function parseProfile(profile: ProfileDraft): ProfileDraft {

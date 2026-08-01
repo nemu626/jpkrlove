@@ -43,3 +43,25 @@ describe('Supabase Data API configuration', () => {
     );
   });
 });
+
+describe('Identity callback configuration', () => {
+  it('uses the same registered app scheme as the Edge Function contract', () => {
+    const appConfig = JSON.parse(
+      readFileSync(
+        resolve(import.meta.dirname, '../apps/mobile/app.json'),
+        'utf8',
+      ),
+    ) as { expo: { scheme?: string } };
+    const edgeContract = readFileSync(
+      resolve(
+        import.meta.dirname,
+        '../supabase/functions/tests/identity-flow.test.ts',
+      ),
+      'utf8',
+    );
+    const callbackUrl = `${appConfig.expo.scheme}://identity/callback`;
+
+    expect(callbackUrl).toBe('jpkrlove://identity/callback');
+    expect(edgeContract).toContain(`callbackUrl: '${callbackUrl}'`);
+  });
+});

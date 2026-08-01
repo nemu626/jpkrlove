@@ -1,27 +1,11 @@
-import { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useOnboarding } from '@/features/onboarding/model/use-onboarding';
+import { useGuardedOnboardingState } from '@/features/onboarding/member-state-route-gate';
 import { IdentityScreen } from '@/features/onboarding/screens/identity-screen';
 import { deviceLocale } from '@/i18n';
 import { useAppServices } from '@/lib/app-services';
 
 export default function IdentityRoute() {
-  const router = useRouter();
   const { onboardingRepository } = useAppServices();
-  const { state, refresh } = useOnboarding(onboardingRepository);
-  useEffect(() => {
-    if (state?.memberState === 'profile_draft') {
-      router.replace('/(onboarding)/profile');
-    }
-  }, [router, state?.memberState]);
-  if (!state) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator color="#176B66" />
-      </View>
-    );
-  }
+  const { state, refresh } = useGuardedOnboardingState();
   return (
     <IdentityScreen
       locale={deviceLocale()}
@@ -31,12 +15,3 @@ export default function IdentityRoute() {
     />
   );
 }
-
-const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F8F9F8',
-  },
-});

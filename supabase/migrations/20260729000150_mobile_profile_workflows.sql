@@ -55,7 +55,8 @@ begin
       message = 'profile is not editable';
   end if;
 
-  if cardinality(media_paths) not between 2 and 6
+  if media_paths is null
+    or cardinality(media_paths) not between 2 and 6
     or cardinality(media_paths) <> (
       select count(distinct path)
       from unnest(media_paths) as path
@@ -182,6 +183,7 @@ begin
   for update;
 
   if not found
+    or ordered_media_ids is null
     or cardinality(ordered_media_ids) not between 2 and 6
     or cardinality(ordered_media_ids) <> (
       select count(distinct media_id)
@@ -247,6 +249,17 @@ begin
       message = 'profile is not editable';
   end if;
 
+  select object_path
+  into deleted_object_path
+  from app.profile_media
+  where id = target_media_id
+    and user_id = caller_user_id
+  for update;
+
+  if not found then
+    return null;
+  end if;
+
   perform 1
   from app.profile_media
   where user_id = caller_user_id
@@ -264,14 +277,7 @@ begin
 
   delete from app.profile_media
   where id = target_media_id
-    and user_id = caller_user_id
-  returning object_path into deleted_object_path;
-
-  if deleted_object_path is null then
-    raise exception using
-      errcode = 'P0001',
-      message = 'profile media was not found';
-  end if;
+    and user_id = caller_user_id;
 
   set constraints profile_media_user_id_position_key deferred;
 
@@ -317,6 +323,14 @@ as $$
 declare
   caller_user_id uuid := auth.uid();
 begin
+  if media_paths is null
+    or cardinality(media_paths) not between 2 and 6
+  then
+    raise exception using
+      errcode = '22023',
+      message = 'profile media is invalid';
+  end if;
+
   perform app.save_profile_draft(
     profile_locale,
     self_identified_gender,
