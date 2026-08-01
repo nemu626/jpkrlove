@@ -182,6 +182,7 @@ set search_path = pg_catalog, app, private, audit
 as $$
 declare
   target_user_id uuid;
+  latest_case_id uuid;
   current_review_status text;
   current_member_state app.member_state;
   identity_status text;
@@ -212,17 +213,32 @@ begin
     raise exception using errcode = '42501', message = 'self review is not allowed';
   end if;
 
+  select members.member_state
+  into current_member_state
+  from app.members as members
+  where members.user_id = target_user_id
+  for update;
+
   select profiles.review_status
   into current_review_status
   from app.profiles as profiles
   where profiles.user_id = target_user_id
   for update;
 
-  select members.member_state
-  into current_member_state
-  from app.members as members
-  where members.user_id = target_user_id
+  select latest.id
+  into latest_case_id
+  from private.profile_reviews as latest
+  where latest.user_id = target_user_id
+    and latest.status = 'submitted'
+  order by latest.created_at desc, latest.id desc
+  limit 1
   for update;
+
+  if latest_case_id is distinct from p_case_id then
+    raise exception using
+      errcode = 'P0001',
+      message = 'review case is not current';
+  end if;
 
   select identity_cases.status
   into identity_status

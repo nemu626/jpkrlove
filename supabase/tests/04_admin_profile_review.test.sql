@@ -1,6 +1,6 @@
 begin;
 
-select plan(21);
+select plan(23);
 
 do $$
 begin
@@ -297,6 +297,18 @@ select results_eq(
   ),
   'case detail returns derived profile data and ordered private media paths'
 );
+select is_empty(
+  format(
+    $$
+      select name
+      from storage.objects
+      where bucket_id = 'profile-media'
+        and name like %L || '/%%'
+    $$,
+    tests.get_supabase_uid('review_subject')::text
+  ),
+  'reviewer JWT cannot directly read another member media; signing stays server-only'
+);
 select hasnt_column(
   'app',
   'profiles',
@@ -304,10 +316,41 @@ select hasnt_column(
   'review case profile data has no birth date column'
 );
 
+reset role;
+insert into private.profile_reviews (id, user_id, status, notes, created_at)
+values (
+  '20000000-0000-4000-8000-000000000003',
+  tests.get_supabase_uid('review_subject'),
+  'submitted',
+  null,
+  now() + interval '1 second'
+);
+
+select tests.authenticate_as('review_operator');
+select set_config(
+  'request.jwt.claims',
+  jsonb_build_object(
+    'sub', tests.get_supabase_uid('review_operator'),
+    'role', 'authenticated',
+    'aal', 'aal2'
+  )::text,
+  true
+);
+
+select throws_ok(
+  format(
+    $$ select * from app.admin_review_profile(%L, 'approved', null) $$,
+    '20000000-0000-4000-8000-000000000001'
+  ),
+  'P0001',
+  'review case is not current',
+  'a stale submitted review case cannot mutate the latest submission'
+);
+
 select throws_ok(
   format(
     $$ select * from app.admin_review_profile(%L, 'changes_requested', null) $$,
-    '20000000-0000-4000-8000-000000000001'
+    '20000000-0000-4000-8000-000000000003'
   ),
   '22023',
   'review reason required',
@@ -316,7 +359,7 @@ select throws_ok(
 select results_eq(
   format(
     $$ select status from app.admin_review_profile(%L, 'approved', null) $$,
-    '20000000-0000-4000-8000-000000000001'
+    '20000000-0000-4000-8000-000000000003'
   ),
   $$ values ('approved'::text) $$,
   'approved review returns the applied decision'
@@ -349,7 +392,7 @@ select results_eq(
   $$
     select event_type, payload->>'decision'
     from audit.events
-    where subject_id = '20000000-0000-4000-8000-000000000001'
+    where subject_id = '20000000-0000-4000-8000-000000000003'
     order by created_at desc
     limit 1
   $$,
@@ -369,7 +412,7 @@ select set_config(
 select throws_ok(
   format(
     $$ select * from app.admin_review_profile(%L, 'approved', null) $$,
-    '20000000-0000-4000-8000-000000000001'
+    '20000000-0000-4000-8000-000000000003'
   ),
   'P0001',
   'identity or profile state is not reviewable',

@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import {
   createServerSupabaseClient,
+  createServiceRoleSupabaseClient,
   createSupabaseClientForAccessToken,
 } from './supabase/server';
 
@@ -111,6 +112,14 @@ export async function getReviewCase(
   caseId: string,
 ): Promise<ReviewCaseDetail | null> {
   const client = await createServerSupabaseClient();
+  const operator = await getOperatorContext(() => Promise.resolve(client));
+  if (
+    !operator ||
+    operator.aal !== 'aal2' ||
+    !operator.roles.includes('profile_reviewer')
+  ) {
+    throw new Error('審査権限がありません。');
+  }
   const { data, error } = await client
     .schema('app')
     .rpc('admin_profile_review_case', { p_case_id: caseId });
@@ -119,9 +128,10 @@ export async function getReviewCase(
   if (!row) return null;
 
   const summary = mapSummary(row);
+  const signer = createServiceRoleSupabaseClient();
   const photos = await Promise.all(
     normalizePhotos(row.photos).map(async (photo) => {
-      const { data: signed, error: signedError } = await client.storage
+      const { data: signed, error: signedError } = await signer.storage
         .from('profile-media')
         .createSignedUrl(photo.object_path, 300);
       if (signedError || !signed?.signedUrl) {

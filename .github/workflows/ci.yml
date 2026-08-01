@@ -22,3 +22,24 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+
+  database-contracts:
+    name: Supabase database contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.110.0
+      - name: Start the local Supabase stack
+        run: supabase start
+      - name: Reset database from migrations and seed
+        run: supabase db reset --local
+      - name: Run pgTAP and RPC boundary tests
+        run: supabase test db
+      - name: Check migrations and database policies
+        run: supabase db lint --local
+      - name: Stop the local Supabase stack
+        if: always()
+        run: supabase stop

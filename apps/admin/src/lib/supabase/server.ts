@@ -13,6 +13,12 @@ function getSupabaseConfig() {
   return { url, key };
 }
 
+function getSupabaseUrl() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
+  if (!url) throw new Error('Supabase server configuration is missing.');
+  return url;
+}
+
 function findAccessToken(
   values: ReadonlyArray<{ name: string; value: string }>,
 ) {
@@ -70,6 +76,25 @@ export function createSupabaseClientForAccessToken(accessToken: string) {
       persistSession: false,
     },
     global: { headers: { Authorization: `Bearer ${accessToken}` } },
+  });
+}
+
+/**
+ * The service role is intentionally available only to server modules. It is
+ * used for the narrow operation of signing a reviewer's already-authorized
+ * media path because Storage's owner policy cannot sign another member's file.
+ */
+export function createServiceRoleSupabaseClient() {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) {
+    throw new Error('Supabase service role configuration is missing.');
+  }
+  return createClient(getSupabaseUrl(), serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      persistSession: false,
+    },
   });
 }
 
