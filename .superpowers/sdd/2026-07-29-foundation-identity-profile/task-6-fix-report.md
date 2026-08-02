@@ -2,12 +2,12 @@
 
 ## Status
 
-Complete pending independent re-review.
+Complete.
 
 ## Commit
 
 - `934edf5` `fix: close profile review boundaries and add db ci`
-- 次の修正コミット: このレポートを含むコミット
+- `cb1bb8f` `fix: enforce profile media storage ownership`
 
 ## 修正内容
 
