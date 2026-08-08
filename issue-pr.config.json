@@ -1,0 +1,14 @@
+{
+  "repos": [
+    {
+      "owner": "nemu626",
+      "name": "jpkrlove",
+      "path": "."
+    }
+  ],
+  "pipeline": {
+    "triggerLabel": "auto-pr",
+    "maxIterations": 16,
+    "loopIntervalMinutes": 30
+  }
+}

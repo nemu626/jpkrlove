@@ -1,0 +1,1 @@
+Mock plan complete. Will create CONTRIBUTING.md with dev setup, test commands, and PR workflow.
